@@ -21,7 +21,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # ==============================================================================
-
 """
 ARGUS-INT CLI — Interface en ligne de commande
 cli/phynx.py
@@ -29,8 +28,6 @@ cli/phynx.py
 Usage :
   phynx investigate email john.doe@example.com --depth 3
 """
-
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
 
 import typer
 import httpx

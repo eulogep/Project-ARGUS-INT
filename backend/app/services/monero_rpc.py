@@ -29,8 +29,6 @@ Toutes les communications avec le daemon monero-wallet-rpc
 passent UNIQUEMENT par Tor (SOCKS5h). Zéro appel clearnet.
 """
 
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
-
 import httpx
 import logging
 import time

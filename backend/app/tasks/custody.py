@@ -28,8 +28,6 @@ backend/app/tasks/custody.py
 Gère l'exportation finale des rapports, l'ajout sur IPFS et l'ancrage de la preuve.
 """
 
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
-
 import logging
 from celery.utils.log import get_task_logger
 from app.celery_app import celery_app

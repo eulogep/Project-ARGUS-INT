@@ -29,8 +29,6 @@ Micro-paiements via le réseau Lightning Bitcoin.
 Toutes les connexions LND passent par Tor (macaroon auth).
 """
 
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
-
 import base64
 import hashlib
 import logging

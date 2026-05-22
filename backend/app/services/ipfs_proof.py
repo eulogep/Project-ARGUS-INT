@@ -28,8 +28,6 @@ backend/app/services/ipfs_proof.py
 Garantit l'intégrité légale et l'opposabilité des rapports et captures (Chain of Custody).
 """
 
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
-
 import logging
 import hashlib
 import httpx

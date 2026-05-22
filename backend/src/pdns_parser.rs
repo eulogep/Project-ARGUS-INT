@@ -23,10 +23,7 @@
 
 // ARGUS-INT — High-Velocity Network & pDNS Stream Parser
 // backend/src/pdns_parser.rs
-//
 // Moteur de parsing haute performance en Rust.
-
-pub const PROJECT_CANARY: &str = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665";
 
 use pcap::{Capture, Device};
 use serde::{Serialize, Deserialize};

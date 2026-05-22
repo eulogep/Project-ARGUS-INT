@@ -29,8 +29,6 @@ Toutes les données sensibles (emails, pseudos, mots de passe leakés)
 sont chiffrées au repos avec AES-256-GCM.
 """
 
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
-
 import os
 import base64
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM

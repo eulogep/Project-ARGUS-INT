@@ -28,8 +28,6 @@ backend/app/services/graph.py
 Encapsule toutes les interactions avec Neo4j (neo4j-driver).
 """
 
-__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
-
 import logging
 from typing import Optional
 from neo4j import GraphDatabase, Driver
