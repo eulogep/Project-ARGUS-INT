@@ -36,11 +36,28 @@ requests==2.32.2
 # Tor / Proxies
 PySocks==1.7.1
 
-# LLM local (client Ollama)
-ollama==0.2.0
+# ─── Phase 5 : Sovereign AI Engine ────────────────────────────
+# Client OpenAI-compatible (interface vLLM + fallback Ollama)
+openai==1.30.1
 
-# Vector DB & Vector Processing
-pymilvus==2.3.7
+# YOLOv8 — Détection d'objets GEOINT/IMINT
+ultralytics==8.2.0
+
+# Transformers HuggingFace — DeBERTa Firewall + modèles locaux
+transformers==4.41.2
+torch==2.3.0
+# CLIP — Recherche sémantique d'images
+open-clip-torch==2.24.0
+
+# Comptage de tokens (estimation GPU routing)
+tiktoken==0.7.0
+
+# Scipy pour clustering DBSCAN (face clustering)
+scipy==1.13.0
+scikit-learn==1.4.2
+
+# ─── Vector DB & Vector Processing ────────────────────────────
+pymilvus==2.4.3          # Milvus 2.4+ avec Sparse Vectors natifs
 sentence-transformers==2.7.0
 spacy==3.7.4
 numpy==1.26.4

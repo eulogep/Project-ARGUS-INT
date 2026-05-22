@@ -1,0 +1,313 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 eulogep
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
+# docker-compose.gpu.yml
+# ============================================================================
+# ARGUS-INT — GPU Overlay : vLLM Sovereign Inference Engine
+#
+# Usage (overlay sur le stack prod) :
+#   docker compose -f docker-compose.prod.yml -f docker-compose.gpu.yml up -d
+#
+# Prérequis :
+#   - NVIDIA Container Toolkit installé (nvidia-ctk, nvidia-container-runtime)
+#   - Driver NVIDIA >= 525 (pour CUDA 12.x)
+#   - Modèles téléchargés dans /opt/argus-models/ (air-gapped)
+#     ├── llm-heavy/      # ex: Meta-Llama-3-70B-Instruct-AWQ
+#     ├── llm-light/      # ex: Meta-Llama-3-8B-Instruct-AWQ
+#     ├── vision/         # ex: LLaVA-1.6-Mistral-7B
+#     └── classifiers/    # ex: ProtectAI/deberta-v3-base-prompt-injection
+# ============================================================================
+
+version: '3.8'
+
+services:
+
+  # ==========================================================================
+  # vLLM Heavy — Modèle 70B pour tâches cognitives lourdes
+  # Queue : gpu-heavy (rapports, HUMINT, analyse multi-source)
+  # ==========================================================================
+  vllm-heavy:
+    image: vllm/vllm-openai:v0.5.0
+    container_name: argus-vllm-heavy
+    restart: unless-stopped
+    runtime: nvidia
+    command: >
+      --model /models/llm-heavy
+      --served-model-name argus-heavy
+      --host 0.0.0.0
+      --port 8100
+      --tensor-parallel-size 2
+      --gpu-memory-utilization 0.90
+      --quantization awq
+      --max-model-len 8192
+      --max-num-seqs 32
+      --enable-chunked-prefill
+      --disable-log-requests
+      --uvicorn-log-level warning
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0,1
+      - VLLM_WORKER_MULTIPROC_METHOD=spawn
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+    volumes:
+      - type: bind
+        source: /opt/argus-models/llm-heavy
+        target: /models/llm-heavy
+        read_only: true
+    networks:
+      - gpu-net
+      - backend-net
+    ports:
+      - "127.0.0.1:8100:8100"   # Accessible uniquement en local
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 2
+              capabilities: [gpu]
+        limits:
+          memory: 80G
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s    # Le chargement du modèle 70B prend ~2 min
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==========================================================================
+  # vLLM Light — Modèle 8B pour tâches CPU-légères et fallback OOM
+  # Queue : gpu-light (NER, classification, embeddings rapides)
+  # ==========================================================================
+  vllm-light:
+    image: vllm/vllm-openai:v0.5.0
+    container_name: argus-vllm-light
+    restart: unless-stopped
+    runtime: nvidia
+    command: >
+      --model /models/llm-light
+      --served-model-name argus-light
+      --host 0.0.0.0
+      --port 8101
+      --tensor-parallel-size 1
+      --gpu-memory-utilization 0.85
+      --quantization awq
+      --max-model-len 8192
+      --max-num-seqs 64
+      --enable-chunked-prefill
+      --disable-log-requests
+      --uvicorn-log-level warning
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+    volumes:
+      - type: bind
+        source: /opt/argus-models/llm-light
+        target: /models/llm-light
+        read_only: true
+    networks:
+      - gpu-net
+      - backend-net
+    ports:
+      - "127.0.0.1:8101:8101"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+        limits:
+          memory: 20G
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==========================================================================
+  # vLLM Vision — LLaVA pour GEOINT/IMINT (analyse d'images)
+  # Modèle : LLaVA-1.6-Mistral-7B-GGUF (ou BakLLaVA)
+  # ==========================================================================
+  vllm-vision:
+    image: vllm/vllm-openai:v0.5.0
+    container_name: argus-vllm-vision
+    restart: unless-stopped
+    runtime: nvidia
+    command: >
+      --model /models/vision
+      --served-model-name argus-vision
+      --host 0.0.0.0
+      --port 8102
+      --tensor-parallel-size 1
+      --gpu-memory-utilization 0.80
+      --max-model-len 4096
+      --max-num-seqs 8
+      --image-input-type pixel_values
+      --image-token-id 32000
+      --image-input-shape 1,3,336,336
+      --image-feature-size 1176
+      --disable-log-requests
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=1
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+    volumes:
+      - type: bind
+        source: /opt/argus-models/vision
+        target: /models/vision
+        read_only: true
+    networks:
+      - gpu-net
+      - backend-net
+    ports:
+      - "127.0.0.1:8102:8102"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+        limits:
+          memory: 24G
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==========================================================================
+  # Worker GPU Heavy — Celery dédié aux tâches gpu-heavy
+  # Utilise le backend existant + routage vers vLLM Heavy
+  # ==========================================================================
+  celery-gpu-heavy:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: argus-int/backend:0.5.0
+    container_name: argus-celery-gpu-heavy
+    restart: unless-stopped
+    command: >
+      celery -A app.celery_app worker
+      -Q gpu-heavy,cognitive
+      --loglevel=INFO
+      --concurrency=2
+      -n gpu-heavy@%h
+    environment:
+      - ENV=production
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - VLLM_HEAVY_URL=http://vllm-heavy:8100/v1
+      - VLLM_LIGHT_URL=http://vllm-light:8101/v1
+      - VLLM_VISION_URL=http://vllm-vision:8102/v1
+      - INFERENCE_BACKEND=vllm
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+      - HF_HOME=/models/classifiers
+    env_file:
+      - .env.prod.enc
+    volumes:
+      - type: bind
+        source: /opt/argus-models/classifiers
+        target: /models/classifiers
+        read_only: true
+    networks:
+      - backend-net
+      - db-net
+      - gpu-net
+    depends_on:
+      vllm-heavy:
+        condition: service_healthy
+      vllm-light:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+
+  # ==========================================================================
+  # Worker GPU Light — Celery pour tâches légères (NER, embedding, vision)
+  # ==========================================================================
+  celery-gpu-light:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: argus-int/backend:0.5.0
+    container_name: argus-celery-gpu-light
+    restart: unless-stopped
+    command: >
+      celery -A app.celery_app worker
+      -Q gpu-light,vision
+      --loglevel=INFO
+      --concurrency=4
+      -n gpu-light@%h
+    environment:
+      - ENV=production
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - VLLM_HEAVY_URL=http://vllm-heavy:8100/v1
+      - VLLM_LIGHT_URL=http://vllm-light:8101/v1
+      - VLLM_VISION_URL=http://vllm-vision:8102/v1
+      - INFERENCE_BACKEND=vllm
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
+      - HF_HOME=/models/classifiers
+    env_file:
+      - .env.prod.enc
+    volumes:
+      - type: bind
+        source: /opt/argus-models/classifiers
+        target: /models/classifiers
+        read_only: true
+    networks:
+      - backend-net
+      - db-net
+      - gpu-net
+    depends_on:
+      vllm-light:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+
+# ============================================================================
+# Réseau GPU isolé — Seuls les workers et vLLM y ont accès
+# ============================================================================
+networks:
+  gpu-net:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.3.0/24
+    driver_opts:
+      com.docker.network.bridge.name: argus-gpu

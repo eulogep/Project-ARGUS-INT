@@ -1,13 +1,50 @@
-*
+# Ignorer les fichiers générés et cachés
 **/__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.DS_Store
+*.tar.gz
+*.ots
+venv*/
+.venv/
+node_modules/
+.next/
+.env
+.env.prod*
+*.enc
+
+# Inclure explicitement les fichiers de configuration et code source
 !.gitignore
+!.sops.yaml
+!README.md
+!DISCLAIMER.md
+!LICENSE
 !requirements.txt
 !.env.example
+
+# Docker & deploy
 !docker-compose.yml
+!docker-compose.prod.yml
+!docker-compose.gpu.yml
+!deploy.sh
+
+# Répertoires de code source (et tout leur contenu)
 !backend/
+!backend/**
 !frontend/
+!frontend/**
 !db/
+!db/**
 !docs/
+!docs/**
 !k8s/
-!README.md
+!k8s/**
+!scripts/
+!scripts/**
+!assets/
+!assets/**
+!cli/
+!cli/**
+!.github/
+!.github/**

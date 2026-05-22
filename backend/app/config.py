@@ -53,9 +53,55 @@ class Settings(BaseSettings):
     # Elasticsearch
     ELASTICSEARCH_URL: str = "http://localhost:9200"
 
-    # Ollama (LLM local)
+    # ─── Inference Backend ───────────────────────────────────────
+    # Valeurs : "vllm" (production GPU) | "ollama" (dev/fallback CPU)
+    INFERENCE_BACKEND: str = "ollama"
+
+    # Ollama (dev / fallback CPU)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3"
+
+    # ─── vLLM (production GPU) ───────────────────────────────────
+    VLLM_HEAVY_URL: str = "http://vllm-heavy:8100/v1"
+    VLLM_HEAVY_MODEL: str = "argus-heavy"       # Llama-3-70B-AWQ
+    VLLM_LIGHT_URL: str = "http://vllm-light:8101/v1"
+    VLLM_LIGHT_MODEL: str = "argus-light"       # Llama-3-8B-AWQ
+    VLLM_VISION_URL: str = "http://vllm-vision:8102/v1"
+    VLLM_VISION_MODEL: str = "argus-vision"     # LLaVA-1.6-Mistral-7B
+
+    # ─── GPU Router ──────────────────────────────────────────────
+    # Seuil tokens/requête au-dessus duquel on envoie sur le modèle heavy
+    GPU_HEAVY_TOKEN_THRESHOLD: int = 512
+    MAX_CONCURRENT_LLM_REQUESTS: int = 16
+    LLM_REQUEST_TIMEOUT_S: int = 120
+
+    # ─── HuggingFace Local Cache (air-gapped) ────────────────────
+    HF_HOME: str = "/models/classifiers"
+    HF_HUB_OFFLINE: bool = True
+    TRANSFORMERS_OFFLINE: bool = True
+
+    # ─── AI Firewall (DeBERTa) ───────────────────────────────────
+    AI_FIREWALL_ENABLED: bool = True
+    AI_FIREWALL_MODEL_PATH: str = "/models/classifiers/deberta-prompt-injection"
+    # Seuil d'injection (0-100) au-dessus duquel on bloque
+    AI_FIREWALL_THRESHOLD: int = 70
+    # Seuil Layer 1 (regex rapide) — indépendant du modèle
+    AI_FIREWALL_REGEX_THRESHOLD: int = 3
+
+    # ─── Milvus Sparse / Hybrid Search ──────────────────────────
+    MILVUS_SPARSE_ENABLED: bool = True
+    MILVUS_HNSW_M: int = 32
+    MILVUS_HNSW_EF_CONSTRUCTION: int = 400
+    MILVUS_SEARCH_EF: int = 128
+
+    # ─── Cognitive Swarm ─────────────────────────────────────────
+    SWARM_MAX_AGENTS: int = 8
+    # TTL (en secondes) de la mémoire court-terme agent dans Redis
+    AGENT_MEMORY_TTL_S: int = 86400   # 24h
+    # Timeout d'un état de la State Machine (en secondes)
+    AGENT_STATE_TIMEOUT_S: int = 1800  # 30 min
+    # Taille du contexte injecté depuis la mémoire long-terme
+    AGENT_MEMORY_TOP_K: int = 10
 
     # Tor
     TOR_PROXY: str = "socks5h://localhost:9050"

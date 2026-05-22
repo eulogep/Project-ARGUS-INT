@@ -39,6 +39,8 @@ celery_app = Celery(
         "app.tasks.geoint",
         "app.tasks.techrecon",
         "app.tasks.correlation",
+        "app.tasks.cognitive",   # Phase 5 — Agents cognitifs
+        "app.tasks.vision",      # Phase 5 — Pipeline vision GPU
     ]
 )
 
@@ -49,14 +51,22 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_routes={
-        "app.tasks.identity.*": {"queue": "identity"},
-        "app.tasks.breach.*":   {"queue": "breach"},
-        "app.tasks.darkweb.*":  {"queue": "darkweb"},
-        "app.tasks.geoint.*":   {"queue": "geoint"},
-        "app.tasks.techrecon.*":{"queue": "techrecon"},
+        # Queues existantes (Phase 1-4)
+        "app.tasks.identity.*":   {"queue": "identity"},
+        "app.tasks.breach.*":     {"queue": "breach"},
+        "app.tasks.darkweb.*":    {"queue": "darkweb"},
+        "app.tasks.geoint.*":     {"queue": "geoint"},
+        "app.tasks.techrecon.*": {"queue": "techrecon"},
+        # Phase 5 — Queues GPU
+        "app.tasks.cognitive.*":  {"queue": "gpu-heavy"},  # Analyse LLM 70B
+        "app.tasks.vision.*":     {"queue": "gpu-light"},  # YOLOv8/CLIP sur GPU light
     },
-    task_soft_time_limit=300,   # 5 min par tâche
-    task_time_limit=600,        # hard kill à 10 min
+    # Limites temporelles (tâches GPU peuvent prendre plus de temps)
+    task_soft_time_limit=600,    # 10 min pour les tâches cognitives
+    task_time_limit=1200,        # hard kill à 20 min
     worker_prefetch_multiplier=1,
-    task_acks_late=True,        # Ack après succès seulement
+    task_acks_late=True,
+    # Priorités de queues (gpu-heavy = critique)
+    task_queue_max_priority=10,
+    task_default_priority=5,
 )
