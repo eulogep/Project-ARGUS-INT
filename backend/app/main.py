@@ -41,8 +41,9 @@ from datetime import datetime
 from app.models import InvestigationRequest, InvestigationResponse, InvestigationStatus
 from app.database import get_db_session, init_db
 from app.celery_app import celery_app
-from app.routers import graph, reports, modules
+from app.routers import graph, reports, modules, vision, humint
 from app.websocket import websocket_graph_endpoint
+from app.middleware.ai_firewall import initialize_firewall, AIFirewallMiddleware
 import os
 
 # Application lifespan manager
@@ -50,13 +51,15 @@ import os
 async def lifespan(app: FastAPI):
     # Startup: init Postgres connection pool & tables
     await init_db()
+    # Initialisation de l'AI Firewall local (chargement DeBERTa)
+    initialize_firewall()
     yield
 
 # Initialize FastAPI app
 app = FastAPI(
     title="ARGUS-INT Backend",
     description="Multi-Spectrum Intelligence Fusion Platform",
-    version="0.4.0",
+    version="0.5.0",
     lifespan=lifespan,
     docs_url="/api/docs" if os.getenv("ENV") != "production" else None,  # Disable Swagger in prod
     redoc_url="/api/redoc" if os.getenv("ENV") != "production" else None,
@@ -70,17 +73,22 @@ setup_observability(app)
 from app.middleware.security import setup_security_middleware
 setup_security_middleware(app)
 
+# Apply AI Firewall Middleware to guard LLM contexts
+app.add_middleware(AIFirewallMiddleware)
+
+
 app.include_router(graph.router, prefix="/api/v1/graph", tags=["graph"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
 app.include_router(modules.router, prefix="/api/v1/modules", tags=["modules"])
+app.include_router(vision.router, tags=["Vision Pipeline"])
+app.include_router(humint.router, tags=["HUMINT Operations"])
 
 # Register WebSocket endpoint
 app.add_api_websocket_route("/ws/graph/{investigation_id}", websocket_graph_endpoint)
 
-# Health check endpoints
 @app.get("/health", tags=["system"])
 async def health_check():
-    return {"status": "healthy", "version": "0.4.0"}
+    return {"status": "healthy", "version": "0.5.0"}
 
 @app.get("/ready", tags=["system"])
 async def readiness_check():
