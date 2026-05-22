@@ -42,31 +42,57 @@ from app.models import InvestigationRequest, InvestigationResponse, Investigatio
 from app.database import get_db_session, init_db
 from app.celery_app import celery_app
 from app.routers import graph, reports, modules
-from app import websocket
+from app.websocket import websocket_graph_endpoint
+import os
 
+# Application lifespan manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: init Postgres connection pool & tables
     await init_db()
     yield
 
+# Initialize FastAPI app
 app = FastAPI(
-    title="PHYNX OSINT Framework",
-    version="1.0.0",
-    docs_url="/api/docs",
-    redoc_url=None,
-    lifespan=lifespan
+    title="ARGUS-INT Backend",
+    description="Multi-Spectrum Intelligence Fusion Platform",
+    version="0.4.0",
+    lifespan=lifespan,
+    docs_url="/api/docs" if os.getenv("ENV") != "production" else None,  # Disable Swagger in prod
+    redoc_url="/api/redoc" if os.getenv("ENV") != "production" else None,
 )
 
+# Setup observability (logging + Prometheus metrics)
 from app.observability.logging import setup_observability
 setup_observability(app)
 
+# Apply security middleware
 from app.middleware.security import setup_security_middleware
 setup_security_middleware(app)
 
 app.include_router(graph.router, prefix="/api/v1/graph", tags=["graph"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
 app.include_router(modules.router, prefix="/api/v1/modules", tags=["modules"])
-app.include_router(websocket.router, tags=["websocket"])
+
+# Register WebSocket endpoint
+app.add_api_websocket_route("/ws/graph/{investigation_id}", websocket_graph_endpoint)
+
+# Health check endpoints
+@app.get("/health", tags=["system"])
+async def health_check():
+    return {"status": "healthy", "version": "0.4.0"}
+
+@app.get("/ready", tags=["system"])
+async def readiness_check():
+    # Add actual dependency checks here (DB, Neo4j, Redis)
+    return {"status": "ready"}
+
+# Root redirect to docs (dev only)
+@app.get("/")
+async def root():
+    if os.getenv("ENV") != "production":
+        return {"message": "ARGUS-INT Backend", "docs": "/api/docs"}
+    return {"message": "ARGUS-INT Backend Operational"}
 
 
 @app.post("/api/v1/investigations", response_model=InvestigationResponse, status_code=202)

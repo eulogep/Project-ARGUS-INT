@@ -58,3 +58,4 @@ tenacity==8.2.3
 prometheus-fastapi-instrumentator==7.0.0
 alembic==1.13.1
 SQLAlchemy==2.0.29
+slowapi==0.1.9
