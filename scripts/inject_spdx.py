@@ -83,7 +83,7 @@ RUST_HEADER = """// ============================================================
 // ==============================================================================
 """
 
-EXCLUDED_DIRS = {".git", ".github", ".venv", "venv", "__pycache__", "target", "assets"}
+EXCLUDED_DIRS = {".git", ".github", ".venv", "venv", "__pycache__", "target", "assets", "node_modules", ".next"}
 EXCLUDED_FILES = {"LICENSE", "README.md", "DISCLAIMER.md"}
 
 def check_and_inject(filepath: str, check_only: bool = False) -> bool:
