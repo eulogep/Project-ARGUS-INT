@@ -45,14 +45,14 @@ def apply_adversarial_patch(image: np.ndarray, patch: np.ndarray, x: int, y: int
 def base_person_image():
     """Crée une image factice de 640x640 représentant une personne (carré blanc au centre)."""
     img = np.zeros((640, 640, 3), dtype=np.uint8)
-    cv2.rectangle(img, (200, 200), (440, 600), (255, 255, 255), -1)
+    img[200:600, 200:440] = [255, 255, 255]
     return img
 
 @pytest.fixture
 def base_face_image():
     """Crée une image factice de 112x112 représentant un visage (carré blanc en haut)."""
     img = np.zeros((112, 112, 3), dtype=np.uint8)
-    cv2.rectangle(img, (36, 20), (76, 60), (255, 255, 255), -1)
+    img[20:60, 36:76] = [255, 255, 255]
     return img
 
 
