@@ -41,7 +41,7 @@ from datetime import datetime
 from app.models import InvestigationRequest, InvestigationResponse, InvestigationStatus
 from app.database import get_db_session, init_db
 from app.celery_app import celery_app
-from app.routers import graph, reports, modules, vision, humint
+from app.routers import graph, reports, modules, vision, humint, panic
 from app.websocket import websocket_graph_endpoint
 from app.middleware.ai_firewall import initialize_firewall, AIFirewallMiddleware
 import os
@@ -82,6 +82,8 @@ app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
 app.include_router(modules.router, prefix="/api/v1/modules", tags=["modules"])
 app.include_router(vision.router, tags=["Vision Pipeline"])
 app.include_router(humint.router, tags=["HUMINT Operations"])
+app.include_router(panic.router)
+
 
 # Register WebSocket endpoint
 app.add_api_websocket_route("/ws/graph/{investigation_id}", websocket_graph_endpoint)
