@@ -1,7 +1,7 @@
 # 🌐 Project ARGUS-INT: Multi-Spectrum Intelligence Fusion Platform
 
 <p align="center">
-  <img src="https://via.placeholder.com/800x200/0a0a0a/00ff00?text=PROJECT+ARGUS-INT" alt="ARGUS-INT Banner"/>
+  <img src="assets/01.png" alt="ARGUS-INT Holographic 4D Graph Connection" width="800"/>
 </p>
 
 <p align="center">
@@ -58,6 +58,11 @@ If you are looking to contribute, this is the exact map of the project's lifecyc
 - [x] **OPSEC Baseline:** Mat2 metadata stripping, WebRTC/DNS leak prevention modules.
 
 ### 🚧 Phase 3: Cognitive AI & Vectorization (IN PROGRESS - *HELP NEEDED HERE*)
+
+<p align="center">
+  <img src="assets/03.png" alt="ARGUS-INT Abyssal Dark Web & AI Swarms" width="800"/>
+</p>
+
 - [ ] **Stylometry Engine:** Fine-tuning local NLP models for cross-lingual authorship attribution.
 - [ ] **Vector DB Tuning:** Optimizing Milvus for massive-scale facial and behavioral embedding searches.
 - [ ] **Adversarial AI (Red Teaming):** Training the GAN module to automatically generate counter-hypotheses and challenge the investigator's graph.
@@ -78,6 +83,10 @@ If you are looking to contribute, this is the exact map of the project's lifecyc
 ## 🏗️ Architecture Overview
 
 ARGUS-INT relies on a distributed, event-driven architecture designed for petabyte-scale processing.
+
+<p align="center">
+  <img src="assets/02.png" alt="ARGUS-INT Space & RF Surveillance" width="800"/>
+</p>
 
 ```text
 [ DIRTY ZONE (Collection) ]          [ DMZ / DATA DIODE ]         [ CLEAN ZONE (Analysis) ]
