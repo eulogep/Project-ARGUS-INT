@@ -1,0 +1,79 @@
+# backend/.dockerignore
+# ============================================================================
+# Exclude everything not needed for production build
+# ============================================================================
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Development & testing
+tests/
+test_*.py
+*_test.py
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Documentation (not needed in container)
+docs/
+*.md
+LICENSE
+CHANGELOG.md
+
+# IDE & editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment & secrets (CRITICAL: never include secrets)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+
+# Docker & orchestration (avoid recursive builds)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Frontend (separate build context)
+../frontend/
+
+# Build artifacts
+dist/
+build/
+*.whl
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

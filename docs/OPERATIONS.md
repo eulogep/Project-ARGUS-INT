@@ -1,48 +1,79 @@
-# Operations Runbook — ARGUS-INT
+# ARGUS-INT Operations Manual
 
-Ce document décrit les procédures de maintenance, de sauvegarde, de rotation des secrets et de réponse aux incidents pour la plateforme ARGUS-INT en production.
+Ce document régit l'ensemble des procédures d'exploitation, de déploiement et de gestion des incidents pour la plateforme ARGUS-INT.
 
 ---
 
-## 🔐 Gestion des Secrets (SOPS + age)
+## 🚀 Deployment Procedures
 
-Les secrets de production sont chiffrés avec SOPS (Secrets Operations) et `age` afin de ne pas être commités en clair sur le repository.
+### Initial Deployment
+```bash
+# 1. Clone repository
+git clone https://github.com/your-org/argus-int.git
+cd argus-int
 
-### Initialisation & Configuration
-1. Générer la paire de clés `age` sur le serveur de déploiement :
-   ```bash
-   age-keygen -o ~/.config/sops/age/keys.txt
-   ```
-2. Récupérer la clé publique générée et l'inscrire dans le fichier `.sops.yaml` à la racine.
-3. Chiffrer le fichier d'environnement :
-   ```bash
-   sops --encrypt --age <public_key> .env > .env.enc
-   ```
-4. Décoder à la volée pendant le déploiement (géré par `deploy.sh`) :
-   ```bash
-   sops --decrypt .env.enc > .env
-   ```
+# 2. Decrypt production secrets
+sops --decrypt .env.prod.enc > .env.prod
 
-### Procédure de Rotation des Clés
-1. Générer une nouvelle clé d'encryption :
-   ```bash
-   openssl rand -hex 32
-   ```
-2. Modifier le fichier `.env.enc` avec sops :
-   ```bash
-   sops .env.enc
-   ```
-3. Mettre à jour la variable `ENCRYPTION_KEY` et sauvegarder.
-4. Redémarrer les services pour appliquer la rotation :
-   ```bash
-   docker compose -f docker-compose.prod.yml restart backend celery-worker-identity
-   ```
+# 3. Run hardening script
+sudo ./deploy.sh
 
-### 🖋️ Signature & Traçabilité (GPG & OpenTimestamps)
+# 4. Verify deployment
+curl http://localhost:8000/health
+curl http://localhost:3000
+```
+
+### Rolling Updates
+```bash
+# 1. Pull latest code
+git pull origin main
+
+# 2. Rebuild images
+docker compose -f docker-compose.prod.yml build
+
+# 3. Rolling restart (zero downtime)
+docker compose -f docker-compose.prod.yml up -d --no-deps --build backend
+docker compose -f docker-compose.prod.yml up -d --no-deps --build frontend
+
+# 4. Verify health
+docker compose -f docker-compose.prod.yml ps
+```
+
+---
+
+## 🔐 Secrets Management
+
+### Decrypt, Edit and Re-encrypt
+```bash
+# 1. Generate new secret
+openssl rand -hex 32
+
+# 2. Edit encrypted file
+sops .env.prod.enc
+
+# 3. Restart affected services
+docker compose -f docker-compose.prod.yml restart backend celery-worker
+
+# 4. Verify services healthy
+docker compose -f docker-compose.prod.yml ps
+```
+
+### Adding New Secrets
+```bash
+# 1. Decrypt, edit, re-encrypt
+sops --decrypt .env.prod.enc > .env.prod
+echo "NEW_SECRET=value" >> .env.prod
+sops --encrypt --age $(cat ~/.config/sops/age/keys.txt | grep public | awk '{print $NF}') .env.prod > .env.prod.enc
+rm .env.prod
+```
+
+---
+
+## 🖋️ Signature & Traçabilité (GPG & OpenTimestamps)
 
 Afin de garantir l'imputabilité et de prévenir toute falsification de l'historique de livraison :
 
-#### 1. Signature GPG des commits et tags
+### 1. Signature GPG des commits et tags
 Tous les commits de développement et tags de release doivent être signés avec la clé GPG de l'analyste.
 - Configurer la signature automatique locale :
   ```bash
@@ -55,7 +86,7 @@ Tous les commits de développement et tags de release doivent être signés avec
   git tag -s v1.0.0 -m "Release v1.0.0"
   ```
 
-#### 2. Ancrage OpenTimestamps des releases
+### 2. Ancrage OpenTimestamps des releases
 Chaque tag de release signé doit être ancré de manière immuable sur la blockchain Bitcoin via OpenTimestamps.
 - Générer l'ancrage à partir du tag Git :
   ```bash
@@ -70,51 +101,128 @@ Chaque tag de release signé doit être ancré de manière immuable sur la block
 
 ---
 
-## 🗄️ Sauvegarde & Restauration (Backups)
+## 🗄️ Backup & Restoration
 
-### 1. PostgreSQL (Base de données relationnelle)
-* **Sauvegarde** :
-  ```bash
-  docker exec -t argus-postgres pg_dumpall -c -U phynx > postgres_backup_$(date +%F).sql
-  ```
-* **Restauration** :
-  ```bash
-  cat postgres_backup_xxx.sql | docker exec -i argus-postgres psql -U phynx -d phynx
-  ```
+### Backup Procedure (Cron automated)
+Le script `/etc/cron.daily/argus-backup` s'exécute automatiquement chaque jour, extrait les données, les compresse et les chiffre à l'aide de la clé GPG de sauvegarde configurée.
 
-### 2. Neo4j (Base de données Graphe)
-* **Sauvegarde** (Arrêt temporaire nécessaire pour cohérence en mode Community) :
-  ```bash
-  docker compose -f docker-compose.prod.yml stop neo4j
-  tar -czf neo4j_backup_$(date +%F).tar.gz -C /var/lib/docker/volumes/phynx_neo4j_prod_data/_data .
-  docker compose -f docker-compose.prod.yml start neo4j
-  ```
-* **Restauration** :
-  ```bash
-  docker compose -f docker-compose.prod.yml stop neo4j
-  tar -xzf neo4j_backup_xxx.tar.gz -C /var/lib/docker/volumes/phynx_neo4j_prod_data/_data
-  docker compose -f docker-compose.prod.yml start neo4j
-  ```
+### Restoration Procedure
+```bash
+# 1. Stop services
+docker compose -f docker-compose.prod.yml down
+
+# 2. Restore PostgreSQL
+gunzip -c backup-20240115.sql.gz | docker exec -i argus-postgres psql -U argus argus_int
+
+# 3. Restore Neo4j
+docker cp neo4j-20240115.dump argus-neo4j:/backups/
+docker exec argus-neo4j neo4j-admin load --from=/backups/neo4j-20240115.dump --database=neo4j --force
+
+# 4. Restart services
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ---
 
-## 🚨 Réponses aux Incidents & Runbooks
+## 🚨 Incident Response
 
-### 1. Fuite ou Compromission des Données (Panic Trigger)
-En cas de compromission physique d'un poste analyste :
-- L'analyste doit enfoncer 3 fois rapidement la touche `Échap` sur le C2 frontend.
-- Cela purge instantanément IndexedDB, les cookies de session et le stockage local, coupant la connexion au serveur.
-- Si le serveur lui-même est compromis, exécuter sur la machine hôte :
+### Panic Wipe (Emergency Data Destruction)
+En cas de compromission physique d'un poste ou du serveur :
+- **Côté analyste** : Enfoncer 3 fois rapidement la touche `Échap` sur le C2 frontend (purgera instantanément le cache local).
+- **Côté serveur de production** (Wipe complet) :
   ```bash
-  # Effacement à froid de l'infrastructure
+  # Trigger immediate data wipe
   docker compose -f docker-compose.prod.yml down -v
-  rm -rf /var/lib/docker/volumes/phynx_*
+  rm -rf /opt/argus-data/*
+  shred -vfz -n 3 /opt/argus-data/.  # Overwrite 3 times
+  
+  # Wipe Docker volumes
+  docker volume rm $(docker volume ls -q | grep argus)
+  
+  # Clear logs
+  rm -rf /var/lib/docker/containers/*/*-json.log
   ```
 
-### 2. Surcharge de Requêtes (HTTP 429)
-Si un client ou un service externe déclenche trop d'alertes de Rate Limiting :
-- Consulter les logs structurés filtrés par niveau d'avertissement :
-  ```bash
-  docker logs argus-backend | grep -i "rate limit"
-  ```
-- Les adresses IP de confiance peuvent être exclues dans la configuration du middleware `security.py`.
+### Service Recovery
+```bash
+# Check service status
+docker compose -f docker-compose.prod.yml ps
+
+# View logs
+docker compose -f docker-compose.prod.yml logs --tail=100 backend
+
+# Restart specific service
+docker compose -f docker-compose.prod.yml restart backend
+
+# Force recreate container
+docker compose -f docker-compose.prod.yml up -d --force-recreate backend
+```
+
+---
+
+## 📊 Monitoring & Alerting
+
+### Prometheus Metrics
+- **Backend API**: `http://localhost:8000/metrics`
+- **Neo4j**: `http://localhost:7474/metrics`
+- **PostgreSQL**: Configuré via `postgres_exporter`
+
+### Key Metrics to Monitor
+- Temps de réponse de l'API (p95 < 200ms)
+- Taux d'erreur HTTP (réponses 5xx)
+- Nombre de connexions WebSockets actives
+- Longueur de la queue Celery
+- Utilisation du pooler de connexion DB
+- Utilisation de la mémoire et du CPU
+
+### Alert Thresholds
+- Taux d'erreur API > 1% pendant 5 minutes
+- Temps de réponse p95 > 500ms pendant 10 minutes
+- Connexions WebSockets > 1000 actives
+- Queue Celery > 100 tâches
+- Utilisation mémoire > 80%
+
+---
+
+## 🔧 Troubleshooting
+
+### Backend Won't Start
+```bash
+# Check logs
+docker compose -f docker-compose.prod.yml logs backend
+
+# Verify database connectivity
+docker exec argus-backend curl http://postgres:5432
+
+# Check environment variables
+docker exec argus-backend env | grep DATABASE
+```
+
+### Neo4j Performance Issues
+```bash
+# Check Neo4j logs
+docker compose -f docker-compose.prod.yml logs neo4j
+
+# Verify heap memory
+docker exec argus-neo4j neo4j-admin memrec
+
+# Restart with increased memory (Edit docker-compose.prod.yml variables if needed)
+docker compose -f docker-compose.prod.yml up -d neo4j
+```
+
+### WebSocket Disconnections
+```bash
+# Check backend logs for WebSocket errors
+docker compose -f docker-compose.prod.yml logs backend | grep -i websocket
+```
+
+---
+
+## 📞 Emergency Contacts
+- **Administrateur Système** : [Nom] - [Téléphone/Signal]
+- **Équipe Sécurité** : [Nom] - [Téléphone/Signal]
+- **Administrateur DB** : [Nom] - [Téléphone/Signal]
+
+**Dernière mise à jour** : 2024-01-15  
+**Propriétaire** : ARGUS-INT Operations Team  
+**Classification** : INTERNAL USE ONLY
