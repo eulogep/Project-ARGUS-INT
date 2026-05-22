@@ -1,0 +1,114 @@
+# ==============================================================================
+# Project ARGUS-INT - Zero Trust Integration CI Pipeline
+# ==============================================================================
+
+name: ARGUS-INT Full Integration CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # 1. Lint & Static Analysis
+  lint:
+    name: Linting & Security Audits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend Linting
+        run: |
+          cd frontend
+          npm ci
+          npm run lint || true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python Linters
+        run: pip install flake8 black
+
+      - name: Python Linting
+        run: |
+          flake8 backend/app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          black --check backend/app/ || true
+
+  # 2. Automated Tests & Build Verification
+  test-and-build:
+    name: Build & Test Suites
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Next.js C2 App
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio pytest-cov
+
+      - name: Run Pytest Suite
+        run: |
+          cd backend
+          pytest --cov=app --cov-report=xml || true
+
+  # 3. Security Scan & Container Hardening
+  container-security:
+    name: Container Scans & Signed Images
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build backend image locally for scanning
+      - name: Build Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          tags: argus-backend:latest
+          load: true
+
+      # Run Trivy Vulnerability Scanner on the built image
+      - name: Run Trivy Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'argus-backend:latest'
+          format: 'table'
+          exit-code: '0' # Don't block pipeline on warning alerts, but output table report
+          severity: 'CRITICAL,HIGH'

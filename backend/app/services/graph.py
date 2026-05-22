@@ -32,6 +32,7 @@ import logging
 from typing import Optional
 from neo4j import GraphDatabase, Driver
 from app.config import settings
+from app.utils.resilience import neo4j_retry
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class GraphService:
     #  UPSERT NODE
     # ─────────────────────────────────────────────────────────────
 
+    @neo4j_retry
     def upsert_node(self, label: str, properties: dict) -> dict:
         """
         Crée ou met à jour un nœud Neo4j.
@@ -95,6 +97,7 @@ class GraphService:
     #  UPSERT RELATION
     # ─────────────────────────────────────────────────────────────
 
+    @neo4j_retry
     def upsert_relation(
         self,
         from_uid: str,
@@ -128,6 +131,7 @@ class GraphService:
     #  SUGGESTIONS DE PIVOTS (Auto-OSINT)
     # ─────────────────────────────────────────────────────────────
 
+    @neo4j_retry
     def get_pivot_suggestions(self, uid: str, max_depth: int = 2) -> list[dict]:
         """
         Suggère automatiquement les prochains pivots d'investigation
@@ -168,6 +172,7 @@ class GraphService:
     #  EXPORT GRAPHE
     # ─────────────────────────────────────────────────────────────
 
+    @neo4j_retry
     def export_investigation_graph(self, investigation_id: str) -> dict:
         """
         Exporte tous les nœuds et relations d'une investigation.

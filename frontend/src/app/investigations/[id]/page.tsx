@@ -8,7 +8,7 @@ import React, { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useAppStore } from '@/lib/store';
-import { api } from '@/lib/api';
+import { useRealtimeGraph } from '@/hooks/useRealtimeGraph';
 import { NodeInspector } from '@/components/graph/NodeInspector';
 import { GraphControls } from '@/components/graph/GraphControls';
 
@@ -21,22 +21,9 @@ interface Params {
 export default function InvestigationDetailPage({ params }: { params: Promise<Params> }) {
   const resolvedParams = use(params);
   const { investigations } = useAppStore();
-  const [localNodes, setLocalNodes] = useState<any[]>([]);
-  const [localEdges, setLocalEdges] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { nodes: localNodes, edges: localEdges, loading } = useRealtimeGraph(resolvedParams.id);
 
   const inv = investigations.find((i) => i.id === resolvedParams.id);
-
-  useEffect(() => {
-    setLoading(true);
-    api.getGraph(resolvedParams.id)
-      .then((res) => {
-        // Filter elements associated to this mock investigation
-        setLocalNodes(res.nodes);
-        setLocalEdges(res.edges);
-      })
-      .finally(() => setLoading(false));
-  }, [resolvedParams.id]);
 
   if (!inv) {
     return (

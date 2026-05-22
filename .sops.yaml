@@ -1,0 +1,9 @@
+# ==============================================================================
+# Project ARGUS-INT - SOPS Secrets Encryption Config
+# ==============================================================================
+
+creation_rules:
+  # Encrypt only files ending in .env.enc
+  - path_regex: \.env\.enc$
+    # Placeholder for age public key - Replace with output of: age-keygen
+    age: 'age1eulogepkey123examplefakekeysopsdontuseinproduction'

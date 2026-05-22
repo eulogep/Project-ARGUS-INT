@@ -42,6 +42,7 @@ from app.models import InvestigationRequest, InvestigationResponse, Investigatio
 from app.database import get_db_session, init_db
 from app.celery_app import celery_app
 from app.routers import graph, reports, modules
+from app import websocket
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,17 +57,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from app.observability.logging import setup_observability
+setup_observability(app)
+
+from app.middleware.security import setup_security_middleware
+setup_security_middleware(app)
 
 app.include_router(graph.router, prefix="/api/v1/graph", tags=["graph"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
 app.include_router(modules.router, prefix="/api/v1/modules", tags=["modules"])
+app.include_router(websocket.router, tags=["websocket"])
 
 
 @app.post("/api/v1/investigations", response_model=InvestigationResponse, status_code=202)
@@ -143,6 +143,22 @@ def _build_task_group(investigation_id: str, request: InvestigationRequest):
         run_graph_correlation.s(investigation_id=investigation_id)
     )
 
+
+@app.get("/api/v1/investigations", response_model=list[InvestigationResponse])
+async def list_investigations():
+    async with get_db_session() as db:
+        rows = await db.fetch(
+            "SELECT id, target, target_type, depth, status, result_count, created_at FROM investigations ORDER BY created_at DESC"
+        )
+    return [
+        InvestigationResponse(
+            investigation_id=str(row["id"]),
+            status=row["status"],
+            result_count=row["result_count"],
+            created_at=row["created_at"],
+            message=f"Target: {row['target']}"
+        ) for row in rows
+    ]
 
 @app.get("/api/v1/investigations/{investigation_id}", response_model=InvestigationResponse)
 async def get_investigation_status(investigation_id: str):
