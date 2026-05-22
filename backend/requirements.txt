@@ -1,0 +1,57 @@
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+pydantic-settings==2.2.1
+
+# Celery & async
+celery[redis]==5.4.0
+redis==5.0.4
+asyncpg==0.29.0
+
+# HTTP & Scraping
+httpx==0.27.0
+playwright==1.44.0
+scrapy==2.11.1
+beautifulsoup4==4.12.3
+lxml==5.2.1
+
+# Neo4j
+neo4j==5.19.0
+
+# Elasticsearch
+elasticsearch==8.13.0
+
+# Chiffrement
+cryptography==42.0.7
+
+# Image & GEOINT
+Pillow==10.3.0
+exifread==3.0.0
+deepface==0.0.91
+paddleocr==2.7.3
+
+# Blockchain
+requests==2.32.2
+
+# Tor / Proxies
+PySocks==1.7.1
+
+# LLM local (client Ollama)
+ollama==0.2.0
+
+# Vector DB & Vector Processing
+pymilvus==2.3.7
+sentence-transformers==2.7.0
+spacy==3.7.4
+numpy==1.26.4
+opencv-python-headless==4.9.0.80
+insightface==0.7.3
+
+# Rapport
+reportlab==4.1.0
+jinja2==3.1.4
+
+# Utilitaires
+python-dotenv==1.0.1
+structlog==24.1.0
+tenacity==8.2.3

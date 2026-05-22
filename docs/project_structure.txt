@@ -1,0 +1,104 @@
+PHYNX/
+├── docker-compose.yml              ← Orchestration complète
+├── .env.example                    ← Template variables d'environnement
+├── .gitignore
+├── README.md
+│
+├── docs/
+│   ├── architecture.md             ← Architecture complète (diagrammes)
+│   ├── modules/
+│   │   ├── identity.md
+│   │   ├── breach.md
+│   │   ├── darkweb.md
+│   │   ├── geoint.md
+│   │   └── techrecon.md
+│   └── opsec.md                    ← Guide OPSEC & anti-détection
+│
+├── db/
+│   └── init.sql                    ← Schéma PostgreSQL initial
+│
+├── config/
+│   ├── torrc                       ← Configuration Tor
+│   ├── proxies.yaml                ← Liste de proxies (git-ignoré)
+│   └── platforms.yaml              ← 1000+ plateformes pour username enum
+│
+├── backend/                        ← FastAPI Gateway
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── alembic/                    ← Migrations PostgreSQL
+│   │   └── versions/
+│   └── app/
+│       ├── main.py                 ← FastAPI app + routes principales
+│       ├── celery_app.py           ← Config Celery + routing
+│       ├── config.py               ← Settings Pydantic
+│       ├── database.py             ← Connexion PostgreSQL (asyncpg)
+│       ├── models.py               ← Pydantic schemas (I/O API)
+│       │
+│       ├── routers/
+│       │   ├── graph.py            ← GET /graph/{investigation_id}
+│       │   ├── reports.py          ← POST /reports/generate
+│       │   └── modules.py          ← GET /modules, POST /modules/{name}/run
+│       │
+│       ├── tasks/
+│       │   ├── identity.py         ← Module Holehe + Username enum
+│       │   ├── breach.py           ← Module Breach & Leaks
+│       │   ├── darkweb.py          ← Module Dark Web + Tor
+│       │   ├── geoint.py           ← Module GEOINT / IMINT
+│       │   ├── techrecon.py        ← Module Tech Recon (Amass, Nuclei)
+│       │   ├── crypto.py           ← Module Blockchain
+│       │   └── correlation.py      ← Corrélation finale + LLM
+│       │
+│       └── services/
+│           ├── graph.py            ← GraphService (Neo4j)
+│           ├── proxy.py            ← ProxyPool (rotation, health-check)
+│           ├── encryption.py       ← AES-256-GCM chiffrement
+│           ├── archiver.py         ← ArchiveBox integration
+│           ├── llm.py              ← Ollama client (LLM local)
+│           └── report.py           ← Génération PDF/HTML/JSON
+│
+├── modules/                        ← Workers Celery conteneurisés
+│   ├── identity/
+│   │   ├── Dockerfile
+│   │   ├── requirements.txt
+│   │   └── app/
+│   │       ├── celery_app.py       ← Référence le celery_app backend
+│   │       └── tasks/identity.py   ← Copie ou mount depuis backend
+│   ├── breach/
+│   │   ├── Dockerfile
+│   │   └── app/
+│   ├── darkweb/
+│   │   ├── Dockerfile              ← Inclut Tor, PySocks, Scrapy
+│   │   └── app/
+│   ├── geoint/
+│   │   ├── Dockerfile              ← Inclut ExifTool, Tesseract, DeepFace
+│   │   └── app/
+│   └── techrecon/
+│       ├── Dockerfile              ← Inclut Amass, Subfinder, Nuclei, ffuf
+│       └── app/
+│
+├── frontend/                       ← Next.js + D3.js / vis.js
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── next.config.js
+│   └── src/
+│       ├── app/
+│       │   ├── page.tsx            ← Dashboard principal
+│       │   ├── investigation/
+│       │   │   └── [id]/page.tsx   ← Vue investigation + graphe
+│       │   ├── graph/page.tsx      ← Visualisation graphe D3.js
+│       │   └── settings/page.tsx   ← Config modules, proxies
+│       ├── components/
+│       │   ├── GraphViewer.tsx     ← Rendu D3.js / vis.js
+│       │   ├── InvestigationForm.tsx
+│       │   ├── ModuleStatus.tsx    ← Monitoring temps réel
+│       │   └── PivotSuggestions.tsx
+│       └── lib/
+│           ├── api.ts              ← Client FastAPI
+│           └── websocket.ts        ← WebSocket pour updates temps réel
+│
+└── cli/                            ← Interface CLI (Typer)
+    ├── phynx.py                    ← Entry point CLI
+    └── commands/
+        ├── investigate.py          ← phynx investigate <target>
+        ├── graph.py                ← phynx graph export <inv_id>
+        └── modules.py              ← phynx modules list/run

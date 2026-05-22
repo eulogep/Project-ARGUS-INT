@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: milvus-deployment
+  namespace: phynx
+  labels:
+    app: milvus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: milvus
+  template:
+    metadata:
+      labels:
+        app: milvus
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10000
+        fsGroup: 10000
+      containers:
+      - name: milvus
+        image: milvusdb/milvus:v2.3.0
+        command: ["milvus", "run", "standalone"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        env:
+        - name: ETCD_ENDPOINTS
+          value: "etcd-service:2379"
+        - name: MINIO_ADDRESS
+          value: "minio-service:9000"
+        ports:
+        - containerPort: 19530
+          name: grpc
+        resources:
+          limits:
+            cpu: "4"
+            memory: 8Gi
+          requests:
+            cpu: "2"
+            memory: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: milvus-service
+  namespace: phynx
+spec:
+  ports:
+  - port: 19530
+    targetPort: 19530
+    name: grpc
+  selector:
+    app: milvus
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: milvus-network-policy
+  namespace: phynx
+spec:
+  podSelector:
+    matchLabels:
+      app: milvus
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: celery-worker
+    ports:
+    - protocol: TCP
+      port: 19530
