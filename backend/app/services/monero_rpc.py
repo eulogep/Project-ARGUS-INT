@@ -1,16 +1,36 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — Monero RPC Client (Tor-routed)
+ARGUS-INT — Monero RPC Client (Tor-routed)
 backend/app/services/monero_rpc.py
 
 Toutes les communications avec le daemon monero-wallet-rpc
 passent UNIQUEMENT par Tor (SOCKS5h). Zéro appel clearnet.
-
-Sécurité :
-  - Connexion locale uniquement (wallet-rpc dans le même réseau Docker)
-  - Authentification Digest sur le RPC
-  - Timeout strict pour éviter les corrélations temporelles
-  - Zéro log des montants ou adresses en clair
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import httpx
 import logging
 import time

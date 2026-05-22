@@ -1,13 +1,35 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — IPFS & Anchoring Service (Chain of Custody)
+ARGUS-INT — IPFS & Anchoring Service (Chain of Custody)
 backend/app/services/ipfs_proof.py
 
 Garantit l'intégrité légale et l'opposabilité des rapports et captures (Chain of Custody).
-1. Envoi du fichier/rapport vers un nœud IPFS local.
-2. Calcul du hash SHA-256.
-3. Ancrage cryptographique (timestamping) via la blockchain Bitcoin (OP_RETURN)
-   ou via un service d'horodatage décentralisé de confiance (OpenTimestamps / Arweave).
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import logging
 import hashlib
 import httpx

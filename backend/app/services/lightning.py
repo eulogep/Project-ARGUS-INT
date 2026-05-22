@@ -1,15 +1,36 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — Lightning Network Client (LND via Tor)
+ARGUS-INT — Lightning Network Client (LND via Tor)
 backend/app/services/lightning.py
 
 Micro-paiements via le réseau Lightning Bitcoin.
 Toutes les connexions LND passent par Tor (macaroon auth).
-
-Use-cases :
-  - Paiement de proxies résidentiels à la minute
-  - Achat d'accès API (Dehashed, IntelX, etc.)
-  - Paiement de données Dark Web via LNURL/Lightning Address
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import base64
 import hashlib
 import logging

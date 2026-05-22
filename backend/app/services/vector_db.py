@@ -1,17 +1,37 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — Milvus Vector DB Service
+ARGUS-INT — Milvus Vector DB Service
 backend/app/services/vector_db.py
 
 Gère deux collections :
   1. StyleVectors  : embeddings stylistiques (788d) pour l'attribution d'auteur
   2. FaceVectors   : embeddings faciaux (512d) pour le cross-platform matching
-
-Opérations clés :
-  - upsert_style_vector()    → indexe un profil textuel
-  - search_similar_style()   → trouve les entités au style similaire
-  - upsert_face_vector()     → indexe un visage
-  - search_similar_face()    → trouve les visages similaires (PimEyes-like local)
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import logging
 from typing import Optional
 from app.config import settings

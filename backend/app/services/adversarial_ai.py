@@ -1,12 +1,35 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — Adversarial AI Module (GAN Validation Network)
+ARGUS-INT — Adversarial AI Module (GAN Validation Network)
 backend/app/services/adversarial_ai.py
 
-Ce module met en œuvre un réseau de validation adverse ("Devil's Advocate GAN").
-Il s'insère dans le pipeline pour attaquer de manière algorithmique les conclusions
-de l'enquêteur, générer des hypothèses alternatives structurées et tester la force
-des liens dans Neo4j à l'aide de perturbations statistiques.
+Validation adverse ("Devil's Advocate GAN") pour tester la force des liens.
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 
 import logging
 import random

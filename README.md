@@ -8,7 +8,7 @@
   <a href="#"><img src="https://img.shields.io/badge/Status-Active_Development_(Alpha_Core)-orange?style=for-the-badge" alt="Status"></a>
   <a href="#"><img src="https://img.shields.io/badge/Architecture-Kubernetes_/_Zero_Trust-blue?style=for-the-badge" alt="Architecture"></a>
   <a href="#"><img src="https://img.shields.io/badge/OPSEC-Tier_1_(SCIF_Ready)-red?style=for-the-badge" alt="OPSEC"></a>
-  <a href="#"><img src="https://img.shields.io/badge/License-AGPL_v3-lightgrey?style=for-the-badge" alt="License"></a>
+  <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg" alt="License"></a>
 </p>
 
 > **"OSINT is no longer about collecting data. It is about cognitive dominance, multi-INT fusion, and adversarial resilience."**
@@ -147,15 +147,22 @@ For full hardware requirements (GPU/VRAM for local LLMs) and Kubernetes deployme
 
 ---
 
-## ⚖️ Legal & Ethical Disclaimer
+## ⚠️ LEGAL DISCLAIMER & LIMITATION OF LIABILITY
 
-**READ CAREFULLY:** ARGUS-INT is a sovereign, agnostic intelligence platform. It is designed for authorized Cyber Threat Intelligence (CTI), law enforcement, investigative journalism, and academic research.
+**READ CAREFULLY BEFORE USE:**
 
-*   **No Artificial Guardrails:** This software does not restrict queries based on Terms of Service (ToS) or local laws. It is a neutral instrument.
-*   **Operator Responsibility:** The developers assume no liability for the actions of the operators. It is the sole responsibility of the user to ensure their intelligence gathering activities comply with the laws of their jurisdiction (e.g., GDPR, CFAA, local privacy laws).
-*   **Do No Harm:** This tool is for intelligence gathering and analysis, not for active exploitation, kinetic attacks, or unauthorized system compromise.
+Project ARGUS-INT is an advanced intelligence gathering framework designed for authorized Cyber Threat Intelligence (CTI), academic research, and investigative journalism. 
+
+1. **Agnostic Tool:** This software is provided "as is", without any artificial restrictions, guardrails, or censorship. It is a neutral instrument.
+2. **Operator Responsibility:** The developers, contributors, and maintainers of Project ARGUS-INT assume **NO LIABILITY** for any direct, indirect, incidental, or consequential damages arising from the use of this software. 
+3. **Compliance:** It is the sole responsibility of the operator to ensure that their intelligence gathering activities comply with all applicable local, national, and international laws (including but not limited to GDPR, CFAA, CCPA, and computer misuse acts).
+4. **No Authorization:** The presence of this tool does not grant the user any legal authority to access systems, scrape data, or interact with entities without proper authorization. 
+5. **Export Control:** Users are responsible for complying with all applicable export control laws and regulations.
+
+By downloading, compiling, or executing this software, you acknowledge that you understand these terms and accept full legal responsibility for your actions.
 
 <p align="center">
 <b>"Information is power. Fusion is dominance."</b><br>
 <i>Project ARGUS-INT Core Team</i>
 </p>
+

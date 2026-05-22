@@ -1,14 +1,36 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — Red Teaming AI Service (Anti-Bias Analysis)
+ARGUS-INT — Red Teaming AI Service (Anti-Bias Analysis)
 backend/app/services/red_team.py
 
 Analyse cognitive de l'enquête pour détruire les biais de confirmation de l'opérateur.
-S'appuie sur le LLM local (Ollama) et le graphe Neo4j pour :
-  - Parcourir les chemins du graphe
-  - Détecter les liaisons trop faibles ou basées sur une seule source
-  - Générer des contre-hypothèses logiques
-  - Formuler des scénarios alternatifs ("Devil's Advocate")
+S'appuie sur le LLM local (Ollama) et le graphe Neo4j.
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import logging
 import httpx
 from typing import List, Dict
