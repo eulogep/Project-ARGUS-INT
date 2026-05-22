@@ -1,0 +1,1 @@
+*\n!.gitignore\n!requirements.txt\n!.env.example\n!docker-compose.yml\n!backend/\n!db/\n!docs/\n!k8s/\n!README.md

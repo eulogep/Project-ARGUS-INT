@@ -1,0 +1,496 @@
+version: "3.9"
+
+# ============================================================
+#  PHYNX — Framework OSINT Full-Spectrum
+#  docker-compose.yml — Infrastructure FinOps & Crypto Edition
+# ============================================================
+
+x-common-env: &common-env
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: phynx
+  POSTGRES_USER: phynx
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+  REDIS_URL: redis://redis:6379/0
+  NEO4J_URI: bolt://neo4j:7687
+  NEO4J_USER: neo4j
+  NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+  ELASTICSEARCH_URL: http://elasticsearch:9200
+  OLLAMA_BASE_URL: http://ollama:11434
+  SECRET_KEY: ${SECRET_KEY:-changeme_secret_key_32chars}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:-changeme_aes_key_32bytes!!!}
+
+services:
+
+  # ─────────────────────────────────────────────
+  #  INFRASTRUCTURE
+  # ─────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: phynx-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: phynx
+      POSTGRES_USER: phynx
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks: [phynx-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phynx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: phynx-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks: [phynx-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5.18-community
+    container_name: phynx-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-changeme}
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_memory_heap_max__size: 2G
+      NEO4J_dbms_memory_pagecache_size: 1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks: [phynx-net]
+    ports:
+      - "7474:7474"   # Browser UI (désactivable en prod)
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 30s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: phynx-elasticsearch
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: "-Xms1g -Xmx2g"
+      xpack.security.enabled: "false"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks: [phynx-net]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\\|yellow\"'"]
+      interval: 30s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  #  IA LOCALE SOUVERAINE
+  # ─────────────────────────────────────────────
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: phynx-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks: [phynx-net]
+    # GPU support (décommenter si disponible)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ─────────────────────────────────────────────
+  #  BACKEND — FastAPI
+  # ─────────────────────────────────────────────
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: phynx-api
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      APP_ENV: production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - phynx_data:/data/phynx
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      neo4j: {condition: service_healthy}
+    networks: [phynx-net]
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ─────────────────────────────────────────────
+  #  WORKERS CELERY — Un worker par domaine
+  # ─────────────────────────────────────────────
+
+  worker-identity:
+    build:
+      context: ./modules/identity
+      dockerfile: Dockerfile
+    container_name: phynx-worker-identity
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      WORKER_QUEUES: identity
+    volumes:
+      - ./modules/identity:/app
+      - phynx_data:/data/phynx
+    depends_on:
+      - redis
+      - postgres
+    networks: [phynx-net, tor-net]
+    command: celery -A app.celery_app worker -Q identity -c 4 --loglevel=info
+
+  worker-breach:
+    build:
+      context: ./modules/breach
+      dockerfile: Dockerfile
+    container_name: phynx-worker-breach
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      WORKER_QUEUES: breach
+    volumes:
+      - ./modules/breach:/app
+      - breach_data:/data/breach_db    # Dumps locaux COMB, etc.
+    depends_on:
+      - redis
+      - elasticsearch
+    networks: [phynx-net]
+    command: celery -A app.celery_app worker -Q breach -c 2 --loglevel=info
+
+  worker-darkweb:
+    build:
+      context: ./modules/darkweb
+      dockerfile: Dockerfile
+    container_name: phynx-worker-darkweb
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      WORKER_QUEUES: darkweb
+      TOR_PROXY: socks5h://tor:9050
+      TOR_CONTROL_PORT: 9051
+      TOR_CONTROL_PASSWORD: ${TOR_CONTROL_PASSWORD:-changeme}
+    volumes:
+      - ./modules/darkweb:/app
+    depends_on:
+      - redis
+      - tor
+    networks: [phynx-net, tor-net]
+    command: celery -A app.celery_app worker -Q darkweb -c 2 --loglevel=info
+
+  worker-geoint:
+    build:
+      context: ./modules/geoint
+      dockerfile: Dockerfile
+    container_name: phynx-worker-geoint
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      WORKER_QUEUES: geoint
+    volumes:
+      - ./modules/geoint:/app
+      - phynx_data:/data/phynx
+    depends_on:
+      - redis
+    networks: [phynx-net]
+    command: celery -A app.celery_app worker -Q geoint -c 2 --loglevel=info
+
+  worker-techrecon:
+    build:
+      context: ./modules/techrecon
+      dockerfile: Dockerfile
+    container_name: phynx-worker-techrecon
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      WORKER_QUEUES: techrecon
+    volumes:
+      - ./modules/techrecon:/app
+    depends_on:
+      - redis
+    networks: [phynx-net]
+    command: celery -A app.celery_app worker -Q techrecon -c 4 --loglevel=info
+
+  # ─────────────────────────────────────────────
+  #  TOR — Proxy & Rotation de circuits
+  # ─────────────────────────────────────────────
+
+  tor:
+    image: dperson/torproxy:latest
+    container_name: phynx-tor
+    restart: unless-stopped
+    environment:
+      PASSWORD: ${TOR_CONTROL_PASSWORD:-changeme}
+    volumes:
+      - ./config/torrc:/etc/tor/torrc:ro
+    networks: [phynx-net, tor-net]
+    cap_add:
+      - NET_ADMIN
+
+  # ─────────────────────────────────────────────
+  #  ARCHIVAGE — ArchiveBox
+  # ─────────────────────────────────────────────
+
+  archivebox:
+    image: archivebox/archivebox:latest
+    container_name: phynx-archivebox
+    restart: unless-stopped
+    environment:
+      ALLOWED_HOSTS: "*"
+      SECRET_KEY: ${SECRET_KEY:-changeme_secret_key_32chars}
+    volumes:
+      - archive_data:/data
+    networks: [phynx-net]
+    command: server --quick-init 0.0.0.0:8080
+
+  # ─────────────────────────────────────────────
+  #  FRONTEND — Next.js
+  # ─────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: phynx-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:8000
+      NEXT_PUBLIC_WS_URL: ws://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks: [phynx-net]
+
+  worker-finops:
+    build:
+      context: ./modules/finops
+      dockerfile: Dockerfile
+    container_name: phynx-worker-finops
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+      WORKER_QUEUES: finops
+      MONERO_RPC_URL: http://monero-wallet-rpc:18082/json_rpc
+      MONERO_RPC_USER: ${MONERO_RPC_USER:-phynx}
+      MONERO_RPC_PASSWORD: ${MONERO_RPC_PASSWORD:-changeme}
+      LND_REST_URL: https://lnd:8080
+      LND_MACAROON_HEX: ${LND_MACAROON_HEX:-}
+      XMR_CONFIRMATION_WAIT_SECONDS: 120
+    volumes:
+      - ./modules/finops:/app
+    depends_on:
+      - redis
+      - monero-wallet-rpc
+      - lnd
+    networks: [phynx-net, tor-net]
+    command: celery -A app.celery_app worker -Q finops -c 1 --loglevel=info
+    # Concurrence = 1 : les paiements sont séquentiels par sécurité
+
+  # ─────────────────────────────────────────────
+  #  MONERO — Daemon + Wallet RPC
+  # ─────────────────────────────────────────────
+
+  monerod:
+    image: sethsimmons/simple-monerod:latest
+    container_name: phynx-monerod
+    restart: unless-stopped
+    command: >
+      --rpc-restricted-bind-ip=0.0.0.0
+      --rpc-restricted-bind-port=18089
+      --no-igd
+      --zmq-pub=tcp://0.0.0.0:18084
+      --tx-proxy=tor,tor:9050,10
+      --anonymous-inbound=<YOUR_ONION_ADDRESS>:18083,127.0.0.1:18083
+      --prune-blockchain
+    volumes:
+      - monerod_data:/home/monero/.bitmonero
+    networks: [phynx-net, tor-net]
+    # Pas de ports exposés — accès uniquement réseau interne
+
+  monero-wallet-rpc:
+    image: sethsimmons/simple-monero-wallet-rpc:latest
+    container_name: phynx-monero-wallet-rpc
+    restart: unless-stopped
+    environment:
+      DAEMON_ADDRESS: monerod:18089
+      WALLET_DIR: /wallets
+      RPC_USER: ${MONERO_RPC_USER:-phynx}
+      RPC_PASSWORD: ${MONERO_RPC_PASSWORD:-changeme}
+    volumes:
+      - monero_wallets:/wallets   # Volume chiffré LUKS en production
+    depends_on:
+      - monerod
+    networks: [phynx-net]
+    # Port 18082 accessible uniquement en interne
+
+  # ─────────────────────────────────────────────
+  #  LIGHTNING NETWORK — LND
+  # ─────────────────────────────────────────────
+
+  bitcoind:
+    image: lncm/bitcoind:v26.0
+    container_name: phynx-bitcoind
+    restart: unless-stopped
+    command: >
+      -server=1
+      -txindex=1
+      -rpcuser=${BITCOIN_RPC_USER:-phynx}
+      -rpcpassword=${BITCOIN_RPC_PASSWORD:-changeme}
+      -zmqpubrawblock=tcp://0.0.0.0:28332
+      -zmqpubrawtx=tcp://0.0.0.0:28333
+      -proxy=tor:9050
+      -listen=0
+    volumes:
+      - bitcoind_data:/root/.bitcoin
+    networks: [phynx-net, tor-net]
+
+  lnd:
+    image: lightninglabs/lnd:v0.18.0-beta
+    container_name: phynx-lnd
+    restart: unless-stopped
+    environment:
+      LND_BITCOIN_NODE: bitcoind
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:-phynx}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:-changeme}
+    volumes:
+      - lnd_data:/root/.lnd
+      - ./config/lnd.conf:/root/.lnd/lnd.conf:ro
+    depends_on:
+      - bitcoind
+      - tor
+    networks: [phynx-net, tor-net]
+    # REST API accessible uniquement en interne (port 8080)
+
+  # ─────────────────────────────────────────────
+  #  MONITORING — Flower (Celery Dashboard)
+  # ─────────────────────────────────────────────
+
+  flower:
+    image: mher/flower:2.0
+    container_name: phynx-flower
+    restart: unless-stopped
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      FLOWER_PORT: 5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks: [phynx-net]
+
+  # ─────────────────────────────────────────────
+  #  VECTOR DB — Milvus (Standalone minimal setup)
+  # ─────────────────────────────────────────────
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: phynx-etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls=http://0.0.0.0:2379 --data-dir /etcd
+    volumes:
+      - etcd_data:/etcd
+    networks: [phynx-net]
+
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: phynx-minio
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    command: minio server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks: [phynx-net]
+
+  milvus-standalone:
+    image: milvusdb/milvus:v2.3.0
+    container_name: phynx-milvus
+    command: milvus run standalone
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    depends_on:
+      - etcd
+      - minio
+    ports:
+      - "19530:19530" # Pour debug CLI local si nécessaire
+    networks: [phynx-net]
+
+  # ─────────────────────────────────────────────
+  #  IPFS — Kubo Local Node
+  # ─────────────────────────────────────────────
+
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: phynx-ipfs
+    restart: unless-stopped
+    volumes:
+      - ipfs_staging:/export
+      - ipfs_data:/data/ipfs
+    ports:
+      - "4001:4001"     # IPFS swarm (p2p)
+      - "8080:8080"     # IPFS gateway
+      # 5001 API uniquement accessible en local réseau interne
+    networks: [phynx-net]
+
+# ─────────────────────────────────────────────
+#  VOLUMES & NETWORKS
+# ─────────────────────────────────────────────
+
+volumes:
+  postgres_data:
+  redis_data:
+  neo4j_data:
+  neo4j_logs:
+  es_data:
+  ollama_data:
+  phynx_data:
+  breach_data:
+  archive_data:
+  monerod_data:
+  monero_wallets:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${MONERO_WALLET_PATH:-./data/monero_wallets}
+      # En production : monter un volume LUKS chiffré
+  bitcoind_data:
+  lnd_data:
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LND_DATA_PATH:-./data/lnd}
+  etcd_data:
+  minio_data:
+  milvus_data:
+  ipfs_staging:
+  ipfs_data:
+
+networks:
+  phynx-net:
+    driver: bridge
+  tor-net:
+    driver: bridge
+    internal: true   # Isolé — seul tor peut sortir
