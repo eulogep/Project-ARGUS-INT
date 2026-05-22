@@ -6,6 +6,7 @@
 !.env.example
 !docker-compose.yml
 !backend/
+!frontend/
 !db/
 !docs/
 !k8s/
