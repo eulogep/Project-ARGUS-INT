@@ -31,52 +31,49 @@ Designed for elite Cyber Threat Intelligence (CTI) units, investigative journali
 
 ## 📍 Current Status: Where We Are
 
-**We are currently at the end of Phase 2 (Core Engine & Graph Integration).** 
-The foundational architecture is stable. The transition from a monolithic Docker Compose setup to a distributed Kubernetes (K8s) architecture is underway. 
+**We are currently at the end of Phase 4 (Backend Integration & Production Hardening).** 
+The foundational engine, data layers, real-time WebSocket communication, and tactical frontend are fully connected. The platform has been hardened for production deployment under a Zero-Trust architecture.
 
 **What is working right now:**
-* The FastAPI/Rust backend is successfully ingesting surface web and basic Dark Web (Tor) data.
-* The Neo4j graph database is dynamically updating nodes and edges in real-time.
-* The FinOps module can successfully execute micro-transactions via Lightning Network to unlock premium API endpoints anonymously.
-* Local LLM (Ollama/Llama-3) is integrated for basic semantic parsing and PII extraction.
+* **Real-time Graph Engine:** FastAPI WebSocket manager dynamically streaming graph topology updates (nodes/edges) to a Next.js 16 (Turbopack) frontend.
+* **Production Orchestration:** Micro-segmented multi-container deployment (`docker-compose.prod.yml`) isolating the frontend, API gateway, Celery worker, and database tiers (PostgreSQL, Neo4j community, Redis cache).
+* **Supply Chain Security:** CI/CD pipeline verifying GPG signatures on all commits, scanning with Trivy, publishing CycloneDX SBOMs, signing containers with Cosign, and anchoring releases on the Bitcoin blockchain via OpenTimestamps.
+* **Resilient Infrastructure:** System hardening script (`deploy.sh`) configuring UFW firewalls, fail2ban, automated safety updates, and SOPS + age encrypted secrets.
 
-**Where we stopped (The immediate bottleneck):**
-We are currently optimizing the **Milvus Vector DB integration for cross-lingual stylometry** and finalizing the **Kubernetes NetworkPolicies** to enforce strict Zero-Trust micro-segmentation between the "Dirty" (Collection) and "Clean" (Analysis) zones.
+**Next Immediate Target (Phase 5):**
+Transitioning to scaling AI in production: optimizing local LLM swarms for stylometry, Milvus vector DB tuning for high-throughput similarity searches, and horizontal inference scaling.
 
 ---
 
 ## 🗺️ Roadmap: Done vs. To Do
 
-If you are looking to contribute, this is the exact map of the project's lifecycle.
-
 ### ✅ Phase 1 & 2: Foundation & Core Engine (COMPLETED)
 - [x] **Architecture Design:** Zero-Trust micro-services architecture.
 - [x] **Backend Core:** FastAPI (Python) + High-performance parsers (Rust).
-- [x] **Graph Engine:** Neo4j integration with custom Cypher queries for 4D (time-travel) relationship mapping.
+- [x] **Graph Engine:** Neo4j integration with custom Cypher queries for 4D relationship mapping.
 - [x] **FinOps Module:** Monero (XMR) and BTC Lightning wallet integration for anonymous resource procurement.
 - [x] **Basic Scrapers:** Headless browser (Playwright) with TLS/Canvas spoofing and residential proxy rotation.
 - [x] **OPSEC Baseline:** Mat2 metadata stripping, WebRTC/DNS leak prevention modules.
 
-### 🚧 Phase 3: Cognitive AI & Vectorization (IN PROGRESS - *HELP NEEDED HERE*)
+### ✅ Phase 3: Cognitive AI & Vectorization (COMPLETED)
+- [x] **Stylometry Engine:** Local NLP models parsing text files for cross-lingual authorship attribution.
+- [x] **Vector DB Ingestion:** Milvus vector store setup for facial and behavioral fingerprinting.
+- [x] **HUMINT Swarms:** Multi-agent framework managing autonomous pretexts on forums/Discord.
 
-<p align="center">
-  <img src="assets/03.png" alt="ARGUS-INT Abyssal Dark Web & AI Swarms" width="800"/>
-</p>
+### ✅ Phase 4: Backend Integration & Production Hardening (COMPLETED)
+- [x] **Real-time WebSockets:** Heartbeat ping/pong, connection limits, and multi-mode JWT/No-Auth fallback.
+- [x] **Zero-Trust Middleware:** Security headers (HSTS, CSP, X-Frame-Options) and Redis-based rate limiting.
+- [x] **Container Hardening:** Multi-stage Node/Python builds running as non-root with read-only root filesystems.
+- [x] **CI/CD Supply Chain:** Commit verification, Trivy vulnerability audits, CycloneDX SBOMs, and Cosign image signing.
+- [x] **Blockchain Anchoring:** Automatic release tarball timestamping on the Bitcoin network using OpenTimestamps.
+- [x] **Deployment Hardening:** SOPS encrypted environment management, UFW firewall configurations, fail2ban rules, and daily GPG-encrypted backups.
+- [x] **Incident Response:** Operations manual with Panic Wipe (emergency data destruction) procedures.
 
-- [ ] **Stylometry Engine:** Fine-tuning local NLP models for cross-lingual authorship attribution.
-- [ ] **Vector DB Tuning:** Optimizing Milvus for massive-scale facial and behavioral embedding searches.
-- [ ] **Adversarial AI (Red Teaming):** Training the GAN module to automatically generate counter-hypotheses and challenge the investigator's graph.
-- [ ] **HUMINT Swarms:** Implementing the multi-agent framework for autonomous social engineering (pretexting) on forums/Discord.
-
-### ⏳ Phase 4: Multi-INT & Space/RF Integration (PLANNED)
-- [ ] **SIGINT/pDNS Pipeline:** Integrating Apache Kafka for high-throughput passive DNS and BGP routing ingestion.
-- [ ] **Astro-GEOINT:** Adding SAR (Synthetic Aperture Radar) and hyperspectral image processing pipelines.
-- [ ] **SDR/RF Ingestion:** Modules for Software Defined Radio telemetry parsing (Wi-Fi/Bluetooth/IoT fingerprinting).
-
-### 🔮 Phase 5: Hardening & Post-Quantum (FUTURE)
-- [ ] **Post-Quantum Cryptography (PQC):** Migrating internal comms and data-at-rest encryption to Kyber/Dilithium standards.
-- [ ] **Hardware Data Diodes:** Software simulation and hardware integration guides for strict unidirectional data flow.
-- [ ] **SCIF Deployment:** Finalizing the automated air-gapped deployment scripts for Sensitive Compartmented Information Facilities.
+### 🚧 Phase 5: AI in Production (IN PROGRESS)
+- [ ] **LLM Optimization:** Local LLM quantization (GGUF/AWQ), micro-batching, and local inference caching.
+- [ ] **Fine-Tuning:** Advanced models specialized in stylometry, facial matching, and SAR satellite GEOINT.
+- [ ] **Distributed Inference:** Scaling horizontally using vLLM/Ollama in Kubernetes clusters.
+- [ ] **Autonomous HUMINT Memory:** Integrating persistent long-term storage (RAG-based) into multi-agent systems.
 
 ---
 
