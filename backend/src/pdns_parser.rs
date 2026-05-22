@@ -1,7 +1,7 @@
 // ==============================================================================
 // Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
 // ==============================================================================
-// Copyright (C) 2026 emc2
+// Copyright (C) 2026 eulogep
 //
 // This file is part of Project ARGUS-INT.
 //
