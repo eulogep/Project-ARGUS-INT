@@ -1,24 +1,35 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — Tâche Stylométrie & Avatar Matching (Livrable #4)
+ARGUS-INT — Tâche Stylométrie & Avatar Matching
 backend/app/tasks/stylometry.py
 
-Pipeline complet :
-  1. Réception d'un texte brut + métadonnées (pseudo, plateforme)
-  2. Extraction du profil stylistique (features + embedding 768d)
-  3. Injection du vecteur dans Milvus
-  4. Recherche de pseudos similaires (score de similarité)
-  5. Injection des liens SAME_AUTHOR dans Neo4j
-
-Exemple d'usage :
-  run_stylometry_pipeline.delay(
-      investigation_id="...",
-      entity_uid="username:johndoe",
-      text="voici un texte posté par la cible...",
-      pseudo="johndoe",
-      platform="reddit",
-      timestamps=[1700000000, 1700003600, ...]
-  )
+Pipeline complet d'analyse stylistique et de reconnaissance faciale.
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import hashlib
 import logging
 from typing import Optional

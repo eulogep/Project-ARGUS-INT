@@ -1,20 +1,38 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 emc2
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
 """
-PHYNX — FinOps Task : Micro-paiement anonyme + accès API premium
+ARGUS-INT — FinOps Task : Micro-paiement anonyme + accès API premium
 backend/app/tasks/finops.py
 
 FLUX COMPLET :
   1. Module OSINT détecte qu'une source requiert un paiement
   2. Celery dispatch → finops.pay_and_fetch()
-  3. Sélection automatique XMR ou Lightning selon le montant et la disponibilité
-  4. Paiement via Tor → confirmation → appel API premium
-  5. Résultats injectés dans Neo4j
-  6. Dépense enregistrée dans le dashboard FinOps (chiffrée)
-
-EXEMPLE D'USE-CASE :
-  - Achat d'un lookup Dehashed (Lightning, ~50 sats)
-  - Achat d'un dump IntelX (XMR, ~0.001 XMR)
-  - Achat d'un accès proxy résidentiel 1h (Lightning, ~100 sats)
+  3. Sélection automatique XMR ou Lightning
 """
+
+__PROJECT_CANARY__ = "41524755532d494e54204372656174656420627920656d6332202d20446f206e6f742072656d6f7665"
+
 import logging
 import time
 import httpx
