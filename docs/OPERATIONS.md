@@ -38,6 +38,36 @@ Les secrets de production sont chiffrés avec SOPS (Secrets Operations) et `age`
    docker compose -f docker-compose.prod.yml restart backend celery-worker-identity
    ```
 
+### 🖋️ Signature & Traçabilité (GPG & OpenTimestamps)
+
+Afin de garantir l'imputabilité et de prévenir toute falsification de l'historique de livraison :
+
+#### 1. Signature GPG des commits et tags
+Tous les commits de développement et tags de release doivent être signés avec la clé GPG de l'analyste.
+- Configurer la signature automatique locale :
+  ```bash
+  git config --local user.signingkey <KEY_ID>
+  git config --local commit.gpgsign true
+  git config --local tag.gpgSign true
+  ```
+- Créer un tag de release signé :
+  ```bash
+  git tag -s v1.0.0 -m "Release v1.0.0"
+  ```
+
+#### 2. Ancrage OpenTimestamps des releases
+Chaque tag de release signé doit être ancré de manière immuable sur la blockchain Bitcoin via OpenTimestamps.
+- Générer l'ancrage à partir du tag Git :
+  ```bash
+  git cat-file tag v1.0.0 > v1.0.0.tag
+  ots stamp v1.0.0.tag
+  ```
+- Cela crée un fichier d'attestation `v1.0.0.tag.ots` à conserver dans le dossier des releases de l'infrastructure.
+- Pour vérifier la signature temporelle ultérieurement :
+  ```bash
+  ots verify v1.0.0.tag.ots
+  ```
+
 ---
 
 ## 🗄️ Sauvegarde & Restauration (Backups)
