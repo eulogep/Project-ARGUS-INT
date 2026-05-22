@@ -21,9 +21,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ==============================================================================
 
-// ARGUS-INT — High-Velocity Network & pDNS Stream Parser
-// backend/src/pdns_parser.rs
-// Moteur de parsing haute performance en Rust.
+mod anti_tampering;
 
 use pcap::{Capture, Device};
 use serde::{Serialize, Deserialize};
@@ -52,6 +50,9 @@ impl PacketEngine {
 
     /// Démarre le traitement en continu du flux réseau de l'interface
     pub fn run_capture(&self) -> Result<(), Box<dyn std::error::Error>> {
+        // Exécuter les vérifications de sécurité active de la plateforme
+        crate::anti_tampering::run_security_checks();
+
         let device = Device::list()?
             .into_iter()
             .find(|d| d.name == self.interface_name)

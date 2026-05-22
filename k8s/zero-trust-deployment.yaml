@@ -1,0 +1,175 @@
+# ==============================================================================
+# Project ARGUS-INT - Multi-Spectrum Intelligence Fusion Platform
+# ==============================================================================
+# Copyright (C) 2026 eulogep
+#
+# This file is part of Project ARGUS-INT.
+#
+# Project ARGUS-INT is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# Project ARGUS-INT is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with Project ARGUS-INT. If not, see <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argus-core-deployment
+  namespace: phynx
+  labels:
+    app: argus-core
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: argus-core
+  template:
+    metadata:
+      labels:
+        app: argus-core
+    spec:
+      # Empêcher le partage des espaces de noms système avec l'hôte
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+      - name: argus-core
+        image: eulogep/argus-core:latest
+        imagePullPolicy: IfNotPresent
+        
+        # Durcissement maximal au niveau conteneur
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+
+        # Montage d'un volume temporaire en mémoire pour les secrets ou captures volatiles (Pas d'écriture disque)
+        volumeMounts:
+        - name: ephemeral-shm
+          mountPath: /dev/shm
+        - name: secure-vault-volatile
+          mountPath: /app/vault
+          readOnly: false
+
+        resources:
+          limits:
+            cpu: "2"
+            memory: 4Gi
+          requests:
+            cpu: "1"
+            memory: 2Gi
+
+      volumes:
+      - name: ephemeral-shm
+        emptyDir:
+          medium: Memory
+      - name: secure-vault-volatile
+        emptyDir:
+          medium: Memory
+          sizeLimit: 500Mi
+
+---
+# NETWORK POLICY : Isolation globale par défaut (Deny All)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: phynx
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# NETWORK POLICY : Micro-segmentation Zone Propre (Clean Zone)
+# Permet au core d'échanger avec Milvus et Neo4j, mais bloque tout trafic vers la Dirty Zone
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: clean-zone-policy
+  namespace: phynx
+spec:
+  podSelector:
+    matchLabels:
+      app: argus-core
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Connexion à Neo4j
+  - to:
+    - podSelector:
+        matchLabels:
+          app: neo4j
+    ports:
+    - protocol: TCP
+      port: 7687
+  # Connexion à Milvus
+  - to:
+    - podSelector:
+        matchLabels:
+          app: milvus
+    ports:
+    - protocol: TCP
+      port: 19530
+
+---
+# NETWORK POLICY : Isolation de la Zone Sale (Dirty Zone - Tor/Scrapers)
+# N'autorise aucun accès interne de la Clean Zone, et egress uniquement vers Tor/I2P
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dirty-zone-policy
+  namespace: phynx
+spec:
+  podSelector:
+    matchLabels:
+      app: darkweb-scraper
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: celery-broker # Uniquement via les jobs Celery
+  egress:
+  # Uniquement vers le service Proxy Tor local pour la collecte
+  - to:
+    - podSelector:
+        matchLabels:
+          app: tor-proxy
+    ports:
+    - protocol: TCP
+      port: 9050
