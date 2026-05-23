@@ -1,7 +1,7 @@
 # 🌐 ARGUS-INT: Sovereign Multi-Spectrum Intelligence Fusion Platform
 
 <p align="center">
-  <img src="assets/argus-banner.png" alt="ARGUS-INT Holographic 4D Graph" width="800"/>
+  <img src="assets/01.png" alt="ARGUS-INT Holographic 4D Graph Connection" width="800"/>
 </p>
 
 <p align="center">
@@ -69,6 +69,10 @@ The current OSINT landscape is fragmented. Analysts juggle dozens of brittle scr
 - [x] Milvus vector store for facial/behavioral fingerprinting
 - [x] Multi-agent HUMINT framework for autonomous pretexting
 
+<p align="center">
+  <img src="assets/03.png" alt="ARGUS-INT Abyssal Dark Web & AI Swarms" width="800"/>
+</p>
+
 ### ✅ Phase 4: Backend Integration & Production Hardening
 - [x] Real-time WebSockets with heartbeat and connection limits
 - [x] Zero-Trust middleware (HSTS, CSP, rate limiting)
@@ -98,7 +102,7 @@ The current OSINT landscape is fragmented. Analysts juggle dozens of brittle scr
 ARGUS-INT relies on a distributed, event-driven architecture designed for petabyte-scale processing with strict Zero-Trust segmentation.
 
 <p align="center">
-  <img src="assets/architecture-diagram.png" alt="ARGUS-INT Architecture" width="800"/>
+  <img src="assets/02.png" alt="ARGUS-INT Space, RF Surveillance & Architecture Flow" width="800"/>
 </p>
 
 ```text
