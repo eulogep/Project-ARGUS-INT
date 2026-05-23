@@ -30,6 +30,11 @@ echo "  -> Génération du SBOM (CycloneDX)..."
 # Nécessite cyclonedx-cli ou similaire. Simulation :
 echo '{"bomFormat": "CycloneDX", "specVersion": "1.4", "version": 1}' > "$SBOM_FILE"
 
+# 2.5 Génération du Changelog
+echo "  -> Génération automatique du Changelog..."
+bash scripts/release/generate_changelog.sh
+cp CHANGELOG.md "${RELEASE_DIR}/"
+
 cd "$RELEASE_DIR"
 
 # 3. Calcul SHA-256
