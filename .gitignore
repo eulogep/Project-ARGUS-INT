@@ -48,3 +48,8 @@ node_modules/
 !cli/**
 !.github/
 !.github/**
+
+# Forcer l'ignorance des caches Python dans les dossiers explicitement inclus
+backend/**/__pycache__/
+**/*.pyc
+**/*.pyo
